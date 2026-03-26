@@ -741,6 +741,12 @@ fn enableFastBuild(b: *Build) bool {
     return std.mem.eql(u8, val, "1");
 }
 
+fn setNoLinkObjIfSupported(obj: anytype, value: bool) void {
+    if (comptime @hasField(std.meta.Child(@TypeOf(obj)), "no_link_obj")) {
+        @field(obj.*, "no_link_obj") = value;
+    }
+}
+
 fn configureObj(b: *Build, opts: *BunBuildOptions, obj: *Compile) void {
     // Flags on root module get used for the compilation
     obj.root_module.omit_frame_pointer = false;
@@ -757,7 +763,7 @@ fn configureObj(b: *Build, opts: *BunBuildOptions, obj: *Compile) void {
             obj.llvm_codegen_threads = opts.llvm_codegen_threads orelse 0;
     }
 
-    obj.no_link_obj = opts.os != .windows and !opts.no_llvm;
+    setNoLinkObjIfSupported(obj, opts.os != .windows and !opts.no_llvm);
 
     if (opts.enable_asan and !enableFastBuild(b)) {
         if (@hasField(Build.Module, "sanitize_address")) {
